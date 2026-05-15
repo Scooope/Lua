@@ -155,7 +155,7 @@
   bigCookie.appendChild(makeCookieSVG(120));
   const cpcDiv    = tx('div','+1 per click','font-size:11px;color:#a07040;');
   const savedDiv  = tx('div','','font-size:10px;color:#5a9a40;height:14px;');
-  const resetBtn  = tx('button','Reset save','font-size:10px;color:#804040;background:none;border:1px solid #5a2e00;border-radius:4px;cursor:pointer;padding:2px 8px;');
+  const resetBtn  = tx('button','🔄 Reset','font-size:11px;color:#ff6b6b;background:#2d0a0a;border:1px solid #8a2020;border-radius:6px;cursor:pointer;padding:6px 12px;font-weight:700;width:100%;letter-spacing:0.5px;');
   [countDiv,cpsDiv,bigCookie,cpcDiv,savedDiv,resetBtn].forEach(e => left.appendChild(e));
 
   // Mid
@@ -199,9 +199,18 @@
 
   // RESET
   resetBtn.addEventListener('click', () => {
-    if (confirm('Reset all cookie progress?')) {
+    if (confirm('Reset all progress? This cannot be undone.')) {
       try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
-      location.reload();
+      S.cookies = 0; S.totalCookies = 0; S.clickPower = 1; S.cps = 0;
+      S.buildings.forEach(b => {
+        const def = defaultBuildings.find(d => d.id === b.id);
+        if (def) { b.count=0; b.cost=def.baseCost; b.baseCps=def.baseCps; }
+      });
+      S.upgrades.forEach(u => { u.bought = false; });
+      reCalcCps();
+      updateUI();
+      savedDiv.textContent = '\u2713 reset!';
+      setTimeout(() => { savedDiv.textContent = ''; }, 2000);
     }
   });
 
@@ -287,9 +296,16 @@
     setCount();
   });
 
-  // KEYFRAME
+  // KEYFRAME + CUSTOM SCROLLBAR
   const kf = document.createElement('style');
-  kf.textContent = '@keyframes ccfloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(0.6)}}';
+  kf.textContent = `
+    @keyframes ccfloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(0.6)}}
+    #cc-panel ::-webkit-scrollbar{width:6px;}
+    #cc-panel ::-webkit-scrollbar-track{background:transparent;}
+    #cc-panel ::-webkit-scrollbar-thumb{background:#c8621a;border-radius:999px;}
+    #cc-panel ::-webkit-scrollbar-thumb:hover{background:#ffb347;}
+    #cc-panel ::-webkit-scrollbar-corner{background:transparent;}
+  `;
   document.head.appendChild(kf);
 
   // CPS TICK (every 50ms)
