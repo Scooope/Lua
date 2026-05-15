@@ -1,0 +1,352 @@
+(() => {
+  if (document.getElementById('cc-widget')) { document.getElementById('cc-widget').remove(); }
+
+  const S = {
+    cookies: 0, totalCookies: 0, clickPower: 1, cps: 0,
+    buildings: [
+      { id:'cursor',  name:'Cursor',       icon:'🖱️',  baseCost:15,      baseCps:0.1,   count:0, cost:15       },
+      { id:'grandma', name:'Grandma',      icon:'👵',  baseCost:100,     baseCps:0.5,   count:0, cost:100      },
+      { id:'farm',    name:'Farm',         icon:'🌾',  baseCost:1100,    baseCps:4,     count:0, cost:1100     },
+      { id:'mine',    name:'Mine',         icon:'⛏️',  baseCost:12000,   baseCps:10,    count:0, cost:12000    },
+      { id:'factory', name:'Factory',      icon:'🏭',  baseCost:130000,  baseCps:40,    count:0, cost:130000   },
+      { id:'bank',    name:'Bank',         icon:'🏦',  baseCost:1400000, baseCps:100,   count:0, cost:1400000  },
+      { id:'temple',  name:'Temple',       icon:'⛩️',  baseCost:20000000,baseCps:400,   count:0, cost:20000000 },
+      { id:'wizard',  name:'Wizard Tower', icon:'🔮',  baseCost:330000000,baseCps:1666, count:0, cost:330000000},
+    ],
+    upgrades: [
+      { id:'u1',  name:'Better Fingers',    desc:'+1 click power',             cost:100,    bought:false, effect:()=>{ S.clickPower+=1; } },
+      { id:'u2',  name:'Reinforced Gloves', desc:'+3 click power',             cost:500,    bought:false, effect:()=>{ S.clickPower+=3; } },
+      { id:'u3',  name:'Grandma Glasses',   desc:'Grandmas 2× faster',        cost:1000,   bought:false, effect:()=>{ applyMult('grandma',2); } },
+      { id:'u4',  name:'Turbo Cursors',     desc:'Cursors 2× faster',         cost:400,    bought:false, effect:()=>{ applyMult('cursor',2); } },
+      { id:'u5',  name:'Organic Cookies',   desc:'Farms 2× faster',           cost:10000,  bought:false, effect:()=>{ applyMult('farm',2); } },
+      { id:'u6',  name:'Quantum Mining',    desc:'Mines 3× faster',           cost:50000,  bought:false, effect:()=>{ applyMult('mine',3); } },
+      { id:'u7',  name:'Assembly Line',     desc:'Factories 2× faster',       cost:200000, bought:false, effect:()=>{ applyMult('factory',2); } },
+      { id:'u8',  name:'Golden Touch',      desc:'+10 click power',            cost:5000,   bought:false, effect:()=>{ S.clickPower+=10; } },
+      { id:'u9',  name:'Clickstorm',        desc:'+25 click power',            cost:50000,  bought:false, effect:()=>{ S.clickPower+=25; } },
+      { id:'u10', name:'Cookie Empire',     desc:'All buildings 1.5× faster', cost:500000, bought:false, effect:()=>{ S.buildings.forEach(b=>{ b.baseCps*=1.5; }); reCalcCps(); } },
+    ],
+  };
+
+  function applyMult(bid, m) {
+    const b = S.buildings.find(x=>x.id===bid);
+    if (b) { b.baseCps *= m; reCalcCps(); }
+  }
+  function reCalcCps() {
+    S.cps = S.buildings.reduce((sum,b)=> sum + b.baseCps * b.count, 0);
+  }
+  function fmt(n) {
+    if (n >= 1e12) return (n/1e12).toFixed(2)+'T';
+    if (n >= 1e9)  return (n/1e9).toFixed(2)+'B';
+    if (n >= 1e6)  return (n/1e6).toFixed(2)+'M';
+    if (n >= 1e3)  return (n/1e3).toFixed(2)+'K';
+    return Math.floor(n).toString();
+  }
+
+  // ── ROOT CONTAINER ──────────────────────────────────────────────
+  const root = document.createElement('div');
+  root.id = 'cc-widget';
+  root.style.cssText = 'position:fixed;z-index:2147483647;bottom:24px;right:24px;font-family:Nunito,sans-serif;';
+  document.body.appendChild(root);
+
+  // Load Google Font
+  const gf = document.createElement('link');
+  gf.rel = 'stylesheet';
+  gf.href = 'https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap';
+  document.head.appendChild(gf);
+
+  // ── COOKIE ICON (collapsed state) ───────────────────────────────
+  const icon = document.createElement('div');
+  icon.id = 'cc-icon';
+  icon.title = 'Open Cookie Clicker';
+  icon.style.cssText = `
+    width:64px;height:64px;cursor:pointer;user-select:none;
+    filter:drop-shadow(0 4px 16px rgba(255,136,0,0.6));
+    transition:transform 0.1s;
+  `;
+  icon.innerHTML = `<svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+    <circle cx="65" cy="65" r="58" fill="#c8762a"/>
+    <circle cx="65" cy="65" r="54" fill="#d98b3a"/>
+    <circle cx="65" cy="65" r="50" fill="#e09848"/>
+    <path d="M55 40 Q58 52 50 60 Q45 70 52 78" stroke="#b06020" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M78 55 Q72 62 80 70 Q85 76 78 85" stroke="#b06020" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="50" rx="6" ry="5" fill="#5a2800" transform="rotate(-15,50,50)"/>
+    <ellipse cx="78" cy="48" rx="5" ry="4" fill="#5a2800" transform="rotate(10,78,48)"/>
+    <ellipse cx="42" cy="72" rx="4" ry="5" fill="#5a2800" transform="rotate(20,42,72)"/>
+    <ellipse cx="80" cy="74" rx="6" ry="4" fill="#5a2800" transform="rotate(-10,80,74)"/>
+    <ellipse cx="63" cy="85" rx="5" ry="4" fill="#5a2800" transform="rotate(5,63,85)"/>
+    <ellipse cx="55" cy="60" rx="3" ry="4" fill="#5a2800" transform="rotate(25,55,60)"/>
+    <ellipse cx="72" cy="60" rx="4" ry="3" fill="#5a2800"/>
+    <ellipse cx="45" cy="38" rx="8" ry="5" fill="rgba(255,221,153,0.4)" transform="rotate(-30,45,38)"/>
+  </svg>`;
+  icon.addEventListener('mouseenter', ()=>{ icon.style.transform='scale(1.12)'; });
+  icon.addEventListener('mouseleave', ()=>{ icon.style.transform='scale(1)'; });
+  root.appendChild(icon);
+
+  // ── GAME PANEL (expanded state) ─────────────────────────────────
+  const panel = document.createElement('div');
+  panel.id = 'cc-panel';
+  panel.style.cssText = `
+    display:none;
+    width:560px;height:480px;
+    background:#1a0a00;
+    border-radius:14px;
+    border:1px solid #5a2e00;
+    box-shadow:0 16px 60px rgba(0,0,0,0.8),0 0 0 1px rgba(255,160,60,0.15);
+    overflow:hidden;
+    flex-direction:column;
+  `;
+
+  // Title bar
+  const titleBar = document.createElement('div');
+  titleBar.style.cssText = `
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 14px;
+    background:#2b1200;
+    border-bottom:1px solid #5a2e00;
+    cursor:move;
+    flex-shrink:0;
+    user-select:none;
+  `;
+  titleBar.innerHTML = `
+    <span style="font-family:'Fredoka One',cursive;font-size:16px;color:#ffb347;letter-spacing:1px;">🍪 Cookie Clicker</span>
+    <button id="cc-close" style="background:none;border:none;cursor:pointer;font-size:18px;color:#a07040;line-height:1;padding:2px 4px;border-radius:4px;transition:color 0.1s;" title="Close">✕</button>
+  `;
+  panel.appendChild(titleBar);
+
+  // Inner game area
+  const gameArea = document.createElement('div');
+  gameArea.style.cssText = 'display:flex;flex:1;overflow:hidden;';
+
+  // Left
+  const left = document.createElement('div');
+  left.style.cssText = `
+    width:180px;flex-shrink:0;
+    background:#2b1200;
+    border-right:1px solid #5a2e00;
+    display:flex;flex-direction:column;align-items:center;
+    padding:16px 10px;gap:10px;
+  `;
+  left.innerHTML = `
+    <div id="cc-count" style="font-family:'Fredoka One',cursive;font-size:22px;color:#ffb347;text-align:center;line-height:1.15;text-shadow:0 2px 8px rgba(255,136,0,0.3);">0<br><span style="font-size:12px;font-weight:400;">cookies</span></div>
+    <div id="cc-cps" style="font-size:11px;color:#a07040;">0 per second</div>
+    <div id="cc-bigcookie" style="cursor:pointer;user-select:none;filter:drop-shadow(0 4px 14px rgba(255,136,0,0.5));transition:transform 0.08s;">
+      <svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+        <circle cx="65" cy="65" r="58" fill="#c8762a"/>
+        <circle cx="65" cy="65" r="54" fill="#d98b3a"/>
+        <circle cx="65" cy="65" r="50" fill="#e09848"/>
+        <path d="M55 40 Q58 52 50 60 Q45 70 52 78" stroke="#b06020" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M78 55 Q72 62 80 70 Q85 76 78 85" stroke="#b06020" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="50" cy="50" rx="6" ry="5" fill="#5a2800" transform="rotate(-15,50,50)"/>
+        <ellipse cx="78" cy="48" rx="5" ry="4" fill="#5a2800" transform="rotate(10,78,48)"/>
+        <ellipse cx="42" cy="72" rx="4" ry="5" fill="#5a2800" transform="rotate(20,42,72)"/>
+        <ellipse cx="80" cy="74" rx="6" ry="4" fill="#5a2800" transform="rotate(-10,80,74)"/>
+        <ellipse cx="63" cy="85" rx="5" ry="4" fill="#5a2800" transform="rotate(5,63,85)"/>
+        <ellipse cx="55" cy="60" rx="3" ry="4" fill="#5a2800" transform="rotate(25,55,60)"/>
+        <ellipse cx="72" cy="60" rx="4" ry="3" fill="#5a2800"/>
+        <ellipse cx="45" cy="38" rx="8" ry="5" fill="rgba(255,221,153,0.4)" transform="rotate(-30,45,38)"/>
+      </svg>
+    </div>
+    <div id="cc-cpclick" style="font-size:11px;color:#a07040;">+1 per click</div>
+  `;
+
+  // Mid
+  const mid = document.createElement('div');
+  mid.style.cssText = 'flex:1;overflow-y:auto;padding:12px 10px;background:#1a0a00;';
+  mid.innerHTML = `<div style="font-family:'Fredoka One',cursive;font-size:12px;color:#ffb347;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">✨ Upgrades</div><div id="cc-upgrades"></div>`;
+
+  // Right
+  const right = document.createElement('div');
+  right.style.cssText = 'width:165px;flex-shrink:0;overflow-y:auto;padding:10px 7px;background:#1f0c00;border-left:1px solid #5a2e00;';
+  right.innerHTML = `<div style="font-family:'Fredoka One',cursive;font-size:12px;color:#ffb347;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">🏭 Buildings</div><div id="cc-buildings"></div>`;
+
+  gameArea.appendChild(left);
+  gameArea.appendChild(mid);
+  gameArea.appendChild(right);
+  panel.appendChild(gameArea);
+  root.appendChild(panel);
+
+  // ── DRAGGING ────────────────────────────────────────────────────
+  let dragTarget = null, dragOffX = 0, dragOffY = 0, isDragging = false, didDrag = false;
+
+  function startDrag(e, el) {
+    const r = root.getBoundingClientRect();
+    dragTarget = el;
+    dragOffX = e.clientX - r.left;
+    dragOffY = e.clientY - r.top;
+    isDragging = true; didDrag = false;
+    e.preventDefault();
+  }
+
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    didDrag = true;
+    let nx = e.clientX - dragOffX;
+    let ny = e.clientY - dragOffY;
+    nx = Math.max(0, Math.min(window.innerWidth - root.offsetWidth, nx));
+    ny = Math.max(0, Math.min(window.innerHeight - root.offsetHeight, ny));
+    root.style.left = nx + 'px';
+    root.style.top  = ny + 'px';
+    root.style.right = 'auto';
+    root.style.bottom = 'auto';
+  });
+
+  document.addEventListener('mouseup', () => { isDragging = false; });
+
+  // icon draggable
+  icon.addEventListener('mousedown', e => { if (e.button === 0) startDrag(e, icon); });
+  // titlebar draggable
+  titleBar.addEventListener('mousedown', e => { if (e.button === 0) startDrag(e, titleBar); });
+
+  // ── OPEN / CLOSE ────────────────────────────────────────────────
+  function openPanel() {
+    icon.style.display = 'none';
+    panel.style.display = 'flex';
+    updateUI();
+  }
+  function closePanel() {
+    panel.style.display = 'none';
+    icon.style.display = 'block';
+  }
+
+  icon.addEventListener('click', e => { if (!didDrag) openPanel(); });
+  document.getElementById('cc-close').addEventListener('click', closePanel);
+
+  // ── UI RENDERING ────────────────────────────────────────────────
+  function renderUpgrades() {
+    const el = document.getElementById('cc-upgrades');
+    if (!el) return;
+    el.innerHTML = '';
+    S.upgrades.forEach(u => {
+      const can = S.cookies >= u.cost;
+      const btn = document.createElement('div');
+      btn.style.cssText = `
+        display:flex;align-items:center;gap:8px;padding:7px 8px;margin-bottom:6px;
+        border-radius:7px;border:1px solid ${u.bought?'#3a7a00':'#5a2e00'};
+        background:${u.bought?'#1a3500':'#2b1200'};
+        cursor:${u.bought?'default':'pointer'};
+        opacity:${u.bought||can?'1':'0.45'};
+        transition:background 0.12s;
+      `;
+      btn.innerHTML = `
+        <span style="font-size:18px;flex-shrink:0;">${u.bought?'✅':'🍪'}</span>
+        <span style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#ffd07a;">${u.name}</div>
+          <div style="font-size:10px;color:#a07040;">${u.desc}</div>
+        </span>
+        <span style="font-family:'Fredoka One',cursive;font-size:12px;color:${u.bought?'#7bc857':'#ffb347'};flex-shrink:0;">${u.bought?'✓':fmt(u.cost)}</span>
+      `;
+      if (!u.bought) {
+        btn.addEventListener('mouseenter', ()=>{ if(can) btn.style.background='#3d1f00'; });
+        btn.addEventListener('mouseleave', ()=>{ btn.style.background='#2b1200'; });
+        btn.addEventListener('click', ()=>{
+          if (S.cookies >= u.cost) {
+            S.cookies -= u.cost;
+            u.bought = true;
+            u.effect();
+            reCalcCps();
+            updateUI();
+          }
+        });
+      }
+      el.appendChild(btn);
+    });
+  }
+
+  function renderBuildings() {
+    const el = document.getElementById('cc-buildings');
+    if (!el) return;
+    el.innerHTML = '';
+    S.buildings.forEach(b => {
+      const can = S.cookies >= b.cost;
+      const row = document.createElement('div');
+      row.style.cssText = `
+        display:flex;align-items:center;gap:5px;padding:6px 5px;margin-bottom:5px;
+        border-radius:6px;border:1px solid #3a1a00;
+        background:#2b1200;cursor:pointer;
+        opacity:${can||b.count>0?'1':'0.4'};
+        transition:background 0.1s;
+      `;
+      row.innerHTML = `
+        <span style="font-size:16px;flex-shrink:0;">${b.icon}</span>
+        <span style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:700;color:#ffd07a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.name}</div>
+          <div style="font-size:9px;color:#a07040;">${fmt(b.cost)} 🍪</div>
+        </span>
+        <span style="font-family:'Fredoka One',cursive;font-size:15px;color:#ffb347;min-width:20px;text-align:right;">${b.count}</span>
+      `;
+      row.addEventListener('mouseenter', ()=>{ if(can) row.style.background='#3d1f00'; });
+      row.addEventListener('mouseleave', ()=>{ row.style.background='#2b1200'; });
+      row.addEventListener('click', ()=>{
+        if (S.cookies >= b.cost) {
+          S.cookies -= b.cost;
+          b.count++;
+          b.cost = Math.ceil(b.baseCost * Math.pow(1.15, b.count));
+          reCalcCps();
+          updateUI();
+        }
+      });
+      el.appendChild(row);
+    });
+  }
+
+  function updateUI() {
+    const cc = document.getElementById('cc-count');
+    const cps = document.getElementById('cc-cps');
+    const cpc = document.getElementById('cc-cpclick');
+    if (cc) cc.innerHTML = `${fmt(S.cookies)}<br><span style="font-size:12px;font-weight:400;">cookies</span>`;
+    if (cps) cps.textContent = fmt(S.cps) + ' per second';
+    if (cpc) cpc.textContent = '+' + S.clickPower + ' per click';
+    renderUpgrades();
+    renderBuildings();
+  }
+
+  // ── BIG COOKIE CLICK ────────────────────────────────────────────
+  document.getElementById('cc-bigcookie').addEventListener('click', function(e) {
+    S.cookies += S.clickPower;
+    S.totalCookies += S.clickPower;
+    this.style.transform = 'scale(0.9)';
+    setTimeout(() => { this.style.transform = 'scale(1)'; }, 80);
+
+    // floater
+    const f = document.createElement('div');
+    f.textContent = '+' + S.clickPower;
+    f.style.cssText = `
+      position:fixed;pointer-events:none;z-index:2147483648;
+      font-family:'Fredoka One',cursive;font-size:18px;color:#ffb347;
+      text-shadow:0 1px 4px rgba(0,0,0,0.5);
+      left:${e.clientX - 12}px;top:${e.clientY - 8}px;
+      animation:ccfloat 1.1s ease-out forwards;
+    `;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1200);
+
+    const cc = document.getElementById('cc-count');
+    if (cc) cc.innerHTML = `${fmt(S.cookies)}<br><span style="font-size:12px;font-weight:400;">cookies</span>`;
+  });
+
+  // ── INJECT FLOAT KEYFRAME ────────────────────────────────────────
+  const kf = document.createElement('style');
+  kf.textContent = '@keyframes ccfloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-70px) scale(0.6)}}';
+  document.head.appendChild(kf);
+
+  // ── CPS TICK ────────────────────────────────────────────────────
+  const cpsInterval = setInterval(() => {
+    if (!document.getElementById('cc-widget')) { clearInterval(cpsInterval); return; }
+    if (S.cps > 0) {
+      const gain = S.cps / 20;
+      S.cookies += gain;
+      S.totalCookies += gain;
+      if (panel.style.display !== 'none') {
+        const cc = document.getElementById('cc-count');
+        if (cc) cc.innerHTML = `${fmt(S.cookies)}<br><span style="font-size:12px;font-weight:400;">cookies</span>`;
+      }
+    }
+  }, 50);
+
+  const uiInterval = setInterval(() => {
+    if (!document.getElementById('cc-widget')) { clearInterval(uiInterval); return; }
+    if (panel.style.display !== 'none') updateUI();
+  }, 2000);
+
+  console.log('%c🍪 Cookie Clicker loaded! Click the cookie in the bottom-right.', 'color:#ffb347;font-size:14px;font-weight:bold;');
+})();
