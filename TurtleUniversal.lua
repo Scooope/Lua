@@ -1,4 +1,3 @@
--- Protected by Mnx Obfuscator | Public Enemy
 local xEhXJGHrBpI=math.floor(2)
 local tIB31r4iS1xYdJn=86
 local bqD5Xa9JCpBZwaTPeL=math.abs(-22)
@@ -105,5 +104,5 @@ local ks_nehUZhmu_4l5u,d3kFjWCS3pw0hMZdkp=loadstring(btG2Xqj5Nf)
 if ks_nehUZhmu_4l5u then
   ks_nehUZhmu_4l5u()
 else
-  error("Mnx | Public Enemy : "..tostring(d3kFjWCS3pw0hMZdkp))
+  error("Error : "..tostring(d3kFjWCS3pw0hMZdkp))
 end
