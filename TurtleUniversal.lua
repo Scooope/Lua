@@ -1,4 +1,3 @@
--- Protected by Mnx Obfuscator | Public Enemy
 local n8RrY9CFykIwm=type(nil)
 local coUwJhROOjl=bit32.bxor(22,191)
 local mJnLCexQ0mHWAWW45=math.abs(-49)
@@ -106,5 +105,5 @@ local z0WJxsiM0HJii7C,w06hbc1w3XUDO_=loadstring(sTTtl35MqJqM)
 if z0WJxsiM0HJii7C then
   z0WJxsiM0HJii7C()
 else
-  error("Mnx | Public Enemy : "..tostring(w06hbc1w3XUDO_))
+  error("Error : "..tostring(w06hbc1w3XUDO_))
 end
